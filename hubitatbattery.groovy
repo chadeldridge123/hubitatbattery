@@ -32,7 +32,7 @@ def updated() {
 
 def initialize() {
     scheduleCheckBatteryLevels()
-    state.lastNotificationTime = 0
+    state.lastNotificationTime = null // Reset notification timer on initialization
     checkBatteryLevels()
 }
 
@@ -69,14 +69,6 @@ def checkBatteryLevels() {
 }
 
 def sendAlert(lowBatteryDevices) {
-    def now = new Date().time
-    def elapsedMinutes = (now - state.lastNotificationTime) / 60000
-
-    if (elapsedMinutes < checkInterval) {
-        log.debug "Skipping notification; last sent ${elapsedMinutes} minutes ago."
-        return
-    }
-
     def message = "Low battery alert:\n" + lowBatteryDevices.collect {
         "${it.name}: ${it.level}%"
     }.join("\n")
@@ -91,5 +83,6 @@ def sendAlert(lowBatteryDevices) {
         log.warn "No notification devices selected to send alerts."
     }
 
-    state.lastNotificationTime = now
+    // Reset the notification timer after every alert
+    state.lastNotificationTime = new Date().time
 }
