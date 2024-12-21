@@ -6,17 +6,21 @@ definition(
     category: "My Apps",
     iconUrl: "https://example.com/icon.png",
     iconX2Url: "https://example.com/icon@2x.png",
-    version: "1.1"
+    version: "1.3"
 )
 
 preferences {
     section("Battery Alert Settings") {
-        input "alertThreshold", "number", title: "Battery Alert Threshold (%)", required: true, defaultValue: 20
+        input "alertThreshold", "number", title: "Default Battery Alert Threshold (%)", required: true, defaultValue: 20
         input "notificationDevices", "capability.notification", title: "Notification Devices", multiple: true, required: true
         input "checkInterval", "number", title: "How often to check battery levels and send alerts (in minutes)", required: true, defaultValue: 30
     }
-    section("Devices to Monitor") {
+    section("Devices with Default Threshold") {
         input "batteryDevices", "capability.battery", title: "Select Devices", multiple: true, required: true
+    }
+    section("Devices with Custom Threshold") {
+        input "customThresholdDevices", "capability.battery", title: "Select Devices with Custom Thresholds", multiple: true, required: false
+        input "customThresholdValues", "text", title: "Custom Threshold Values (comma-separated, matching order of selected devices)", required: false
     }
 }
 
@@ -42,9 +46,27 @@ def scheduleCheckBatteryLevels() {
     schedule(cronExpression, "checkBatteryLevels")
 }
 
+def parseCustomThresholds() {
+    def thresholds = [:]
+    if (customThresholdDevices && customThresholdValues) {
+        def devices = customThresholdDevices.collect { it.displayName }
+        def values = customThresholdValues.split(",").collect { it.trim().toInteger() }
+
+        if (devices.size() == values.size()) {
+            devices.eachWithIndex { deviceName, idx ->
+                thresholds[deviceName] = values[idx]
+            }
+        } else {
+            log.warn "Custom thresholds configuration mismatch: device and value counts do not match."
+        }
+    }
+    return thresholds
+}
+
 def checkBatteryLevels() {
     log.debug "Checking battery levels..."
 
+    def thresholds = parseCustomThresholds()
     def lowBatteryDevices = []
 
     batteryDevices.each { device ->
@@ -55,9 +77,10 @@ def checkBatteryLevels() {
             return
         }
 
-        log.debug "${device.displayName}: ${batteryLevel}%"
+        def deviceThreshold = thresholds[device.displayName] ?: alertThreshold
+        log.debug "${device.displayName}: ${batteryLevel}%, Threshold: ${deviceThreshold}%"
 
-        if (batteryLevel < alertThreshold) {
+        if (batteryLevel < deviceThreshold) {
             lowBatteryDevices << [name: device.displayName, level: batteryLevel]
         }
     }
@@ -65,7 +88,7 @@ def checkBatteryLevels() {
     if (lowBatteryDevices) {
         sendAlert(lowBatteryDevices)
     } else {
-        log.debug "All devices are above the threshold."
+        log.debug "All devices are above their respective thresholds."
     }
 }
 
