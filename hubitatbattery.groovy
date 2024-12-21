@@ -11,7 +11,7 @@ definition(
 preferences {
     section("Battery Alert Settings") {
         input "alertThreshold", "number", title: "Battery Alert Threshold (%)", required: true, defaultValue: 20
-        input "notificationDevice", "capability.notification", title: "Notification Device", multiple: false, required: true
+        input "notificationDevices", "capability.notification", title: "Notification Devices", multiple: true, required: true
         input "checkInterval", "number", title: "How often to check battery levels and send alerts (in minutes)", required: true, defaultValue: 30
     }
     section("Devices to Monitor") {
@@ -83,10 +83,12 @@ def sendAlert(lowBatteryDevices) {
 
     log.debug message
 
-    if (notificationDevice) {
-        notificationDevice.deviceNotification(message)
+    if (notificationDevices) {
+        notificationDevices.each { device ->
+            device.deviceNotification(message)
+        }
     } else {
-        log.warn "No notification device selected to send alerts."
+        log.warn "No notification devices selected to send alerts."
     }
 
     state.lastNotificationTime = now
