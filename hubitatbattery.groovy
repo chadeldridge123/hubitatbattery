@@ -20,7 +20,7 @@ preferences {
     }
     section("Devices with Custom Threshold") {
         input "customThresholdDevices", "capability.battery", title: "Select Devices with Custom Thresholds", multiple: true, required: false
-        input "customThresholdValues", "text", title: "Custom Threshold Values (comma-separated, matching order of selected devices)", required: false
+        input "customThresholdValues", "text", title: "Custom Threshold Values (comma-separated, matching order of selected devices, e.g., '15, 25, 30' for Device A=15%, Device B=25%, Device C=30%)", required: false
     }
 }
 
