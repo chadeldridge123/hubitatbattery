@@ -6,7 +6,7 @@ definition(
     category: "My Apps",
     iconUrl: "https://example.com/icon.png",
     iconX2Url: "https://example.com/icon@2x.png",
-    version: "1.4"
+    version: "1.5"
 )
 
 preferences {
