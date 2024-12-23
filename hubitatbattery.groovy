@@ -6,7 +6,7 @@ definition(
     category: "My Apps",
     iconUrl: "https://example.com/icon.png",
     iconX2Url: "https://example.com/icon@2x.png",
-    version: "1.4"
+    version: "1.5"
 )
 
 preferences {
@@ -42,8 +42,24 @@ def initialize() {
 }
 
 def scheduleCheckBatteryLevels() {
-    def cronExpression = "0 0/${checkInterval} * * * ?"
-    schedule(cronExpression, "checkBatteryLevels")
+    if (checkInterval < 60) {
+        // If the interval is less than 60 minutes, schedule as usual
+        def cronExpression = "0 0/${checkInterval} * * * ?"
+        schedule(cronExpression, "checkBatteryLevels")
+    } else {
+        // For intervals of 60 minutes or more
+        def hours = (checkInterval / 60).toInteger()
+        def remainingMinutes = checkInterval % 60
+
+        if (remainingMinutes == 0) {
+            // Schedule by the hour
+            def cronExpression = "0 0 0/${hours} * * ?"
+            schedule(cronExpression, "checkBatteryLevels")
+        } else {
+            // Log a warning since mixed hour and minute intervals aren't supported in cron directly
+            log.warn "Check intervals with mixed hours and minutes (e.g., ${checkInterval} minutes) are not supported directly in cron."
+        }
+    }
 }
 
 def parseCustomThresholds() {
