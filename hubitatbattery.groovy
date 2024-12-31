@@ -6,7 +6,7 @@ definition(
     category: "My Apps",
     iconUrl: "https://example.com/icon.png",
     iconX2Url: "https://example.com/icon@2x.png",
-    version: "1.5"
+    version: "1.6"
 )
 
 preferences {
@@ -46,19 +46,26 @@ def scheduleCheckBatteryLevels() {
         // If the interval is less than 60 minutes, schedule as usual
         def cronExpression = "0 0/${checkInterval} * * * ?"
         schedule(cronExpression, "checkBatteryLevels")
-    } else {
-        // For intervals of 60 minutes or more
+    } else if (checkInterval <= 1440) {
+        // For intervals between 60 minutes and 24 hours
         def hours = (checkInterval / 60).toInteger()
         def remainingMinutes = checkInterval % 60
 
         if (remainingMinutes == 0) {
-            // Schedule by the hour
+            // Whole-hour intervals
             def cronExpression = "0 0 0/${hours} * * ?"
             schedule(cronExpression, "checkBatteryLevels")
         } else {
-            // Log a warning since mixed hour and minute intervals aren't supported in cron directly
-            log.warn "Check intervals with mixed hours and minutes (e.g., ${checkInterval} minutes) are not supported directly in cron."
+            // Mixed hour and minute intervals not supported directly in cron
+            def totalSeconds = checkInterval * 60
+            runIn(totalSeconds, "checkBatteryLevels", [overwrite: false])
+            log.info "Scheduled with runIn for ${checkInterval} minutes (${totalSeconds} seconds)."
         }
+    } else {
+        // For intervals greater than 24 hours
+        def totalSeconds = checkInterval * 60
+        runIn(totalSeconds, "checkBatteryLevels", [overwrite: false])
+        log.info "Scheduled with runIn for ${checkInterval} minutes (${totalSeconds} seconds)."
     }
 }
 
